@@ -1,0 +1,23 @@
+# -------------------------------------------------------------
+#    _____                ._____.   .__
+#   /  _  \   ____   _____|__\_ |__ |  |   ____
+#  /  /_\  \ /    \ /  ___/  || __ \|  | _/ __ \
+# /    |    \   |  \\___ \|  || \_\ \  |_\  ___/
+# \____|__  /___|  /____  >__||___  /____/\___  >
+#         \/     \/     \/        \/          \/
+#
+#                              Automating Everything in Code
+#
+# PlayBook Description:
+#  This playbook configures the base OS (Ubuntu)
+#  Installs GCC and updates the cache
+# -------------------------------------------------------------
+---
+- hosts: all
+  sudo: yes
+  tasks:
+    - name: Install system compiler packages.
+     apt: pkg={{ item }} state=installed update-cache=yes
+     with_items:
+       - gcc
+       - git-core

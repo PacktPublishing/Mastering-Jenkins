@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>Feature Toggle JS Example</title>
+
+	<!-- =================================== -->
+	<!-- Feature Toggle JS example           -->
+	<!-- =================================== -->
+	<script type="text/javascript">
+	<!--
+	    function toggle_feature(id) 
+	    {
+	       var e = document.getElementById(id);
+	       if(e.style.display == 'block')
+	          e.style.display = 'none';
+	       else
+	          e.style.display = 'block';
+	    }
+	//-->
+	</script>
+	</head>
+<body>
+
+	<a href="#" onclick="toggle_feature('PrototypeFeature');">Click here to view the prototype effort</a>
+	<div id="PrototypeFeature">This feature is hidden from view until its toggled on</div>
+
+</body>
+</html>
+

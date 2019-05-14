@@ -1,0 +1,15 @@
+<VirtualHost *:80>
+ServerAdmin  webmaster@localhost
+ProxyRequests     Off
+ProxyPreserveHost On
+AllowEncodedSlashes On
+
+    <Proxy *>
+        Order deny,allow
+        Allow from all
+    </Proxy>
+
+    ProxyPass         /  http://localhost:8080/ nocanon
+    ProxyPassReverse  /  http://localhost:8080/
+</VirtualHost>
+

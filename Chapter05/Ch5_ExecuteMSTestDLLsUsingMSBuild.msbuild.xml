@@ -1,0 +1,30 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="ExecuteMSTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    
+    <PropertyGroup>
+        <MsTestExePath>C:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE\mstest.exe</MsTestExePath>
+        <MsTestResultPath>$(WORKSPACE)\MyResults.trx</MsTestResultPath>
+        <Configuration>Release</Configuration>
+    </PropertyGroup>
+
+    <!-- ========================================= -->
+    <!-- Execute MSTest -->
+    <!-- ========================================= -->
+    <Target Name="ExecuteMSTest">
+
+        <!-- Locate MSTest Files in Jenkins WorkSpace *.test.dll -->
+        <ItemGroup>
+            <MSTestAssemblies Include="$(WORKSPACE)\**\*.test.dll"/>
+        </ItemGroup>
+
+        <PropertyGroup>
+            <MsTestCommand>"$(MsTestExePath)" @(MSTestAssemblies->'/testcontainer:"%(FullPath)"', ' ') /resultsfile:"TestResults\Results.trx""</MsTestCommand>
+        </PropertyGroup>
+   
+        <!-- Execute Tests using test command and DLL's found -->
+        <Exec Command="$(MsTestCommand)" ContinueOnError="true" />
+
+    </Target>
+
+</Project>

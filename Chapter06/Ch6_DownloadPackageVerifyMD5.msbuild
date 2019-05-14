@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets = "DownloadVerifyExtract" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+
+	<!-- =========================================================================  -->
+	<!-- CODE SAMPLE: Mastering Jenkins    -->
+	<!-- This Code provides an example for downloading a package, verifying the md5,-->
+	<!-- and unzipping it into a 'scratch/temporary' directory. This code requires  -->
+	<!-- MSBuilExtensionPack and MSBuildCommunityTasks as pre-requisites            -->
+	<!-- For additional information or questions contact us at masteringjenkins.com -->
+	<!-- =========================================================================  -->
+
+	<!-- ================================  -->
+	<!-- GLOBAL VARIABLES -->
+	<!-- ================================ -->
+	<PropertyGroup>
+		<MSBuildCommunityTasksPath>.\</MSBuildCommunityTasksPath>
+		<MSBuildExtensionsPath>.\</MSBuildExtensionsPath>
+		<VERSION Condition="'$(VERSION)' == ''">1.0.0.1000</VERSION>
+		<MACHINEID>$(COMPUTERNAME)</MACHINEID>
+		<ProjectName>$(PRODUCT.Replace('Build.',''))</ProjectName>
+		<ScratchDir>$(WORKSPACE)</ScratchDir>
+		<CHILDTARGETS Condition="'$(CHILDTARGETS)' == ''">ALL</CHILDTARGETS>
+		<MD5HASH Condition="'$(MD5HASH)' == ''">OFF</MD5HASH>
+		<v2Deploy>$(v2Deploy)</v2Deploy>
+	</PropertyGroup>
+	
+
+	<!-- ======================================= -->
+	<!-- Custom C# Task to Compare MD5 Hashes    -->
+	<!-- ======================================= -->
+	<UsingTask TaskName="MD5Verification" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+	<ParameterGroup>
+			<MD5PackagePath ParameterType="System.String" Required="true" />
+			<MD5FileContents ParameterType="System.String" Required="true" />
+			<MD5RequiredHASH ParameterType="System.String" Required="true" />
+	</ParameterGroup>       	   
+	
+	<Task>
+
+		<Using Namespace="System.IO" />
+		<Using Namespace="System.Text.RegularExpressions" />
+		<Using Namespace="System.Security.Cryptography"/>
+		<Using Namespace="Microsoft.Build.Framework" />
+		<Code Type="Fragment" Language="cs">
+
+                <![CDATA[
+
+				
+					// -- Get MD5 value for each of our items
+					FileStream file = new FileStream(MD5PackagePath.ToString(), FileMode.Open);
+					String MD5Required = MD5RequiredHASH.ToString();
+					MD5 md5 = new MD5CryptoServiceProvider();
+					byte[] retVal = md5.ComputeHash(file);
+					file.Close();
+
+					StringBuilder MDHASH = new StringBuilder();
+					for (int i = 0; i < retVal.Length; i++)
+					{
+						MDHASH.Append(retVal[i].ToString("x2"));
+					}
+
+					Log.LogMessage(MessageImportance.Normal, "------------------------------------------------------");
+					Log.LogMessage(MessageImportance.Normal, "Verifying MD5 CheckSums ");			
+					Log.LogMessage(MessageImportance.Normal, "------------------------------------------------------");
+					Log.LogMessage(MessageImportance.Normal, "Package Location: "+ MD5PackagePath +" \nFresh MD5: " + MD5FileContents + "\nArtifactory MD5: " + MDHASH + "\nUser Specified MD5:" + MD5Required);
+
+					int MD5Compare = String.Compare(MD5FileContents.ToString(), MDHASH.ToString());
+					int MD5REQCompare = String.Compare(MD5Required.ToString(), MDHASH.ToString());
+					if ((MD5Required != null)  && (((MD5REQCompare == 0) && (MD5Required != "OFF"))  || (MD5REQCompare != 0) && (MD5Required == "OFF")) && (MD5Compare == 0)) {
+
+						Log.LogMessage(MessageImportance.Normal, "MD5 Verified Successfully");
+					
+					} else {
+
+							Log.LogMessage(MessageImportance.High, "MD5 Verification FAILED!");
+							throw new Exception("Could not verify the MD5's the package downloaded is corrupt.");
+
+					}
+							
+					
+				    ]]>
+
+            </Code>
+        </Task>
+    </UsingTask>
+
+
+	<!-- ================================  -->
+	<!-- PRIMARY ENTRY POINT -->
+	<!-- ================================ -->
+    <Target Name="DownloadVerifyExtract">
+
+		<Message Text="------------------------------------------------------"/>
+		<Message Text="Step 1: Downloading Package from DML "         />		
+		<Message Text="------------------------------------------------------"/>
+
+		<WebDownload FileName="$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip"     
+			FileUri="http://%PATHTOARTIFACT%:8081/artifactory/$(ProjectName)-$(VERSION).zip"     
+			Condition="!Exists('$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip')" ContinueOnError='true'/>
+		
+		<WebDownload FileName="$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip.md5" 
+			FileUri="http://%PATHTOARTIFACT%:8081/artifactory/$(ProjectName)-$(VERSION).zip.md5"     
+			Condition="!Exists('$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip.md5')" ContinueOnError='true'/>
+
+		<Message Text="------------------------------------------------------"/>
+		<Message Text="Step 2: Compare .MD5 contents to MD5 Computed "         />		
+		<Message Text="------------------------------------------------------"/>
+
+		<!-- Create variable containing our md5 file path -->
+		<ItemGroup>
+			<File Include="$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip.md5" />
+		</ItemGroup>
+		
+		<!-- Get MD5 File Contents into a variable -->
+		<ReadLinesFromFile File="@(File)">
+			<Output TaskParameter="Lines" ItemName="FileContents" />
+		</ReadLinesFromFile>
+      
+		<!-- Verify MD5 Computed VS .MD5 contents -->
+		<MD5Verify MD5PackagePath="$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip" MD5FileContents="@(FileContents, '%0a%0d')" MD5RequiredHASH="$(MD5HASH)"/>
+		
+		
+		<Message Text="------------------------------------------------------"/>
+		<Message Text="Step 3: Unzip Package "/>		
+		<Message Text="------------------------------------------------------"/>
+		<MSBuild.ExtensionPack.Compression.Zip TaskAction="Extract" ExtractPath="$(ScratchDir)\Package" ZipFileName="$(ScratchDir)\Package\$(ProjectName)-$(VERSION).zip"/>		
+
+    </Target>
+
+</Project>

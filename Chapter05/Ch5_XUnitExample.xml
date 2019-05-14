@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="myXUnitTests" tests="1" errors="1" failures="0" skip="0">
+    <testcase classname="test_suite.TestA"
+              name="test_A" time="0">
+        <error type="exceptions.TypeError" message="SomeException">
+        Traceback (most recent call last):
+        ...
+        TypeError: SomeException message
+        </error>
+    </testcase>
+</testsuite>
+
